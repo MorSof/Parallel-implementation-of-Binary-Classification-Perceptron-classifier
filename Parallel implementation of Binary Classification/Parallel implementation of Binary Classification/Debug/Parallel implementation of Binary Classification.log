@@ -1,0 +1,3 @@
+﻿  main.c
+c:\users\morso\source\repos\parallel implementation of binary classification\parallel implementation of binary classification\main.c(9): warning C4013: 'time' undefined; assuming extern returning int
+  Parallel implementation of Binary Classification.vcxproj -> C:\Users\morso\source\repos\Parallel implementation of Binary Classification\Debug\Parallel implementation of Binary Classification.exe
