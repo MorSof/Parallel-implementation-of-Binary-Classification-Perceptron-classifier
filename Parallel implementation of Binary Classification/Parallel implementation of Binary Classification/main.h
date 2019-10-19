@@ -9,8 +9,10 @@ typedef struct {
 
 }Point;
 
-Point* readPointsFromFile(const char* fileName, int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC);
+
+Point* readPointsFromFile(const char* fileName, int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC, int myId);
 Point readOnePointFromFile(int K, FILE* fp);
+
 void binaryClassificationAlgorithm(int N, int K, Point* pointArr, double* weights, double a, int LIMIT, double QC, double dt, double tmax);
 void updateAllPointsCoordinantes(Point* pointsArr, double t, int K, int N);
 void updateOnePointCoordinantes(Point* pPoint, double t, int K);
@@ -28,4 +30,4 @@ void writeOnePointToFile(FILE* fp, Point* pPoint, int K);
 Point createOnePoint(int K);
 Point* createPointArr(int N, int K);
 void printOnePoint(Point* pPoint, int K);
-void printPointArr(Point* pointArr, int N, int K);
+void printPointArr(Point* pointArr, int N, int K, int myId);

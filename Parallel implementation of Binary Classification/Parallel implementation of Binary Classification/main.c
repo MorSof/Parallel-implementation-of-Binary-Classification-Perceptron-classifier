@@ -1,33 +1,96 @@
+
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "main.h"
+#include "MPI_related_functions.h"
 
-int main()
+#define MASTER 0
+#define POINT_NUM_OF_ATTRIBUTES 3
+
+
+	/*MPI_Send(
+			void* data,
+			int count,
+			MPI_Datatype datatype,
+			int destination,
+			int tag,
+			MPI_Comm communicator)*/
+
+
+	/*MPI_Recv(
+			void* data,
+			int count,
+			MPI_Datatype datatype,
+			int source,
+			int tag,
+			MPI_Comm communicator,
+			MPI_Status* status)*/
+
+
+
+int main(int argc, char *argv[])
 {
+	int myId, numOfProcess;	
+	MPI_Init(&argc, &argv);
+	MPI_Datatype PointType;
+	MPI_Comm_rank(MPI_COMM_WORLD, &myId);
+	MPI_Comm_size(MPI_COMM_WORLD, &numOfProcess);
+	MPI_Comm cart_comm;	
+	int numOfSlaves = numOfProcess - 1;
+
 	srand(time(0));
-	int N = 200;
-	int K = 3;
-	double dt = 0.10;
-	double tmax = 1000;
+	int N = 10;
+	int K = 2;
+	double dt = 0.1 ;
+	double tmax = 100;
 	double a = 0.5;
 	int LIMIT = 200;
 	double QC = 0.025;
 	int t = 0;
 
+	createPointType(&PointType);
 	//-----------------------------------------------------------------------------------------------
-	Point* pointArrTest = createPointArr(N, K);
-	writePointsToFileTest("ParametersAndPoints.txt", N, K, dt, tmax, a, LIMIT, QC, pointArrTest);
+	if (myId == MASTER) 
+	{
+		Point* pointArrTest = createPointArr(N, K);
+		writePointsToFileTest("C:\\Users\\morso\\source\\repos\\Perceptron-classifier\\Parallel implementation of Binary Classification\\Parallel implementation of Binary Classification\\Points.txt", N, K, dt, tmax, a, LIMIT, QC, pointArrTest);
+	}
 	//-----------------------------------------------------------------------------------------------
-	Point* pointArr = readPointsFromFile("ParametersAndPoints.txt", &N, &K, &dt, &tmax, &a, &LIMIT, &QC);
+	Point* pointArr = NULL;
+
+	if (myId == MASTER)
+	{
+		pointArr = readPointsFromFile("C:\\Users\\morso\\source\\repos\\Perceptron-classifier\\Parallel implementation of Binary Classification\\Parallel implementation of Binary Classification\\Points.txt", &N, &K, &dt, &tmax, &a, &LIMIT, &QC, myId);
+	}
+
+	broadcastParameters(&N, &K, &dt, &tmax, &a, &LIMIT, &QC);
+	int numOfpointsRemainder = N % numOfSlaves;
+	int numOfpointsPerSlave = N / numOfSlaves;
 	double* weights = (double*)calloc(K + 1, sizeof(double));
-	binaryClassificationAlgorithm(N, K, pointArr, weights, a, LIMIT, QC, dt, tmax);
+
+	if (myId == MASTER)
+	{
+		scatterPacks(pointArr, PointType, K, numOfSlaves, numOfpointsRemainder, numOfpointsPerSlave);
+	}
+	else
+	{
+		int numOfPointsToRecieve = myId <= numOfpointsRemainder ? numOfpointsPerSlave + 1 : numOfpointsPerSlave; // spliting the remainder equally
+		pointArr = recievePack(PointType, myId, K, numOfPointsToRecieve);
+		printPointArr(pointArr, numOfPointsToRecieve, K, myId);
+		fflush(NULL);
+
+		binaryClassificationAlgorithm(numOfPointsToRecieve, K, pointArr, weights, a, LIMIT, QC, dt, tmax);
+
+
+	}
+	MPI_Finalize();
 }
 
 
-
-Point* readPointsFromFile(const char* fileName, int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC)
+Point* readPointsFromFile(const char* fileName, int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC, int myId)
 {
 	Point* pointsArr;
 	FILE* fp;
@@ -166,7 +229,7 @@ void binaryClassificationAlgorithm(int N, int K, Point* pointArr, double* weight
 	printf("\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
 	printf("%d\t%d\t%lf\t%lf\t%lf\t%d\t%lf\n", N, K, dt, tmax, a, LIMIT, QC);
 	printf("Alpha minimum = %lf     q = %lf", a, q);
-	printPointArr(pointArr, N, K);
+	/*printPointArr(pointArr, N, K);*/
 	printWeights(weights, K);
 	printf("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
 
@@ -315,24 +378,23 @@ Point createOnePoint(int K)
 void printOnePoint(Point* pPoint, int K)
 {
 	int i;
+
 	for (i = 0; i < K; i++)
 	{
 		printf("%lf\t", pPoint->coordinantes[i]);
 	}
-
 	for (i = 0; i < K; i++)
 	{
 		printf("%lf\t", pPoint->velocity[i]);
 	}
 
-
 	printf("%d ", pPoint->group);
 }
 
-void printPointArr(Point* pointArr, int N, int K)
+void printPointArr(Point* pointArr, int N, int K, int myId)
 {
 	int i;
-	printf("\n-----------Points Array-------------\n");
+	printf("\n-----------Points Array id %d-------------\n", myId);
 	for (i = 0; i < N; i++) {
 		printf("Point Index %d:\t", i);
 		printOnePoint(&(pointArr[i]), K);
