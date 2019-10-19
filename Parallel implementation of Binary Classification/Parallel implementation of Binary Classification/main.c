@@ -193,7 +193,7 @@ void binaryClassificationAlgorithm(int N, int K, Point* pointArr, double* weight
 	int Nmiss = checkAllPointsLimitTimes(N, K, pointArr, weights, a, LIMIT);
 	printf("Nmiss = %d\n", Nmiss);
 	fflush(NULL);
-	if (Nmiss == 0) {
+	if (Nmiss == 0) {//
 		printf("Success! - Zero Nmiss\n");
 		fflush(NULL);
 	}
