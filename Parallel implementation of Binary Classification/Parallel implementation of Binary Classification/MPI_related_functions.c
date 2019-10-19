@@ -7,7 +7,7 @@
 #include "main.h"
 #include "MPI_related_functions.h"
 
-#define MASTER 0 //
+#define MASTER 0 
 #define POINT_NUM_OF_ATTRIBUTES 3
 
 void broadcastParameters(int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC)

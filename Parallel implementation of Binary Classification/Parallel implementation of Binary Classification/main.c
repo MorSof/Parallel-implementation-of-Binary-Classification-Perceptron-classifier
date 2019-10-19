@@ -33,7 +33,7 @@
 
 int main(int argc, char *argv[])
 {
-	int myId, numOfProcess;	hn 
+	int myId, numOfProcess;
 	MPI_Init(&argc, &argv);
 	MPI_Datatype PointType;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myId);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 		printPointArr(pointArr, numOfPointsToRecieve, K, myId);
 		fflush(NULL);
 
-		binaryClassificationAlgorithm(numOfPointsToRecieve, K, pointArr, weights, a, LIMIT, QC, dt, tmax);
+		//binaryClassificationAlgorithm(numOfPointsToRecieve, K, pointArr, weights, a, LIMIT, QC, dt, tmax);
 
 
 	}
