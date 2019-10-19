@@ -33,7 +33,7 @@
 
 int main(int argc, char *argv[])
 {
-	int myId, numOfProcess;	
+	int myId, numOfProcess;	hn 
 	MPI_Init(&argc, &argv);
 	MPI_Datatype PointType;
 	MPI_Comm_rank(MPI_COMM_WORLD, &myId);
