@@ -7,8 +7,17 @@
 #include "main.h"
 #include "MPI_related_functions.h"
 
-#define MASTER 0 
-#define POINT_NUM_OF_ATTRIBUTES 3
+
+void sendMessageToAllSlaves(int numOfWorkingSlaves, int message, int tag)
+{
+	int i, slaveId;
+	for (i = 0; i < numOfWorkingSlaves; i++)
+	{
+		slaveId = i + 1;
+		MPI_Send(&message, 1, MPI_INT, slaveId, tag, MPI_COMM_WORLD);
+	}
+}
+
 
 void broadcastParameters(int* N, int* K, double* dt, double* tmax, double* a, int* LIMIT, double* QC)
 {
@@ -28,6 +37,20 @@ void broadcastParameters(int* N, int* K, double* dt, double* tmax, double* a, in
 	MPI_Bcast(QC, 1, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
 
 
+}
+
+void broadcastPacks(Point* pointArr, MPI_Datatype PointType, int N, int K, int 	numOfWorkingSlaves)
+{
+	int i;
+	int position = 0;
+	int slaveId;
+	char* buffer = creatPack(pointArr, PointType, &position, N, K);
+	for (i = 0; i < numOfWorkingSlaves; i++)
+	{
+		slaveId = i + 1;		
+		MPI_Send(buffer, position, MPI_PACKED, slaveId, 0, MPI_COMM_WORLD);
+	}
+	free(buffer);
 }
 
 void scatterPacks(Point* pointArr, MPI_Datatype PointType, int K, int numOfSlaves, int numOfPointsRemainder, int numOfPointsPerSlave)
@@ -64,19 +87,31 @@ char* creatPack(Point* pointArr, MPI_Datatype PointType, int* position, int N, i
 	return buffer;
 }
 
-Point* recievePack(MPI_Datatype PointType, int myId, int K, int numOfPointsToRecieve)
+Point* recievePack(MPI_Datatype PointType, int myId, int K, int N)
 {
 	MPI_Status status;
 	int position = 0;
 	int bufferSize;
 	char* buffer;
-	printf("im  procccess num: %d and my numOfPointsToRecieve is: %d \n", myId, numOfPointsToRecieve);
-	bufferSize = numOfPointsToRecieve * (sizeof(Point) + K * sizeof(double) + K * sizeof(double));
+	bufferSize = N * (sizeof(Point) + K * sizeof(double) + K * sizeof(double));
 	buffer = (char*)malloc(bufferSize);
 	MPI_Recv(buffer, bufferSize, MPI_PACKED, MASTER, 0, MPI_COMM_WORLD, &status);
-	Point* pointArr = openPack(PointType, buffer, bufferSize, numOfPointsToRecieve, K);
+	Point* pointArr = openPack(PointType, buffer, bufferSize, N, K);
 	return pointArr;
 }
+
+//Point* recievePack(MPI_Datatype PointType, int myId, int K, int numOfPointsToRecieve)
+//{
+//	MPI_Status status;
+//	int position = 0;
+//	int bufferSize;
+//	char* buffer;
+//	bufferSize = numOfPointsToRecieve * (sizeof(Point) + K * sizeof(double) + K * sizeof(double));
+//	buffer = (char*)malloc(bufferSize);
+//	MPI_Recv(buffer, bufferSize, MPI_PACKED, MASTER, 0, MPI_COMM_WORLD, &status);
+//	Point* pointArr = openPack(PointType, buffer, bufferSize, numOfPointsToRecieve, K);
+//	return pointArr;
+//}
 
 Point* openPack(MPI_Datatype PointType, char* buffer, int bufferSize, int N, int K)
 {
@@ -98,7 +133,6 @@ Point* openPack(MPI_Datatype PointType, char* buffer, int bufferSize, int N, int
 
 void createPointType(MPI_Datatype* PointType)
 {
-	/*     name  id numOfGrades  grades (notice - its a pointer!)*/
 	int blockLengths[POINT_NUM_OF_ATTRIBUTES] = { 1, 1, 1 };
 	MPI_Aint disp[POINT_NUM_OF_ATTRIBUTES];
 	MPI_Datatype types[POINT_NUM_OF_ATTRIBUTES] = { MPI_DOUBLE, MPI_DOUBLE ,MPI_INT };
